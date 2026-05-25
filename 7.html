@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Nonequilibrium Brain Dynamics | PH‑700</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/highlight/monokai.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* ==============================
+             DESIGN TOKENS & ROOT VARIABLES
+             ============================== */
+        :root {
+            --bg-abyss: #01000c;
+            --bg-deep: #0b081a;
+            --surface-glass: rgba(15, 20, 45, 0.55);
+            --surface-glass-hover: rgba(18, 24, 52, 0.72);
+            --border-glass: rgba(255, 235, 140, 0.22);
+            --border-glass-hover: rgba(250, 204, 21, 0.55);
+            --cyan: #2dd4bf;
+            --indigo: #a5b4fc;
+            --rose: #fda4af;
+            --gold: #facc15;
+            --gold-dim: #ffd54f;
+            --text-primary: #ffffff;
+            --text-secondary: #e2e8f0;
+            --text-accent: #fffbe6;
+            --accent-tertiary: #67e8f9;
+            --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 30px rgba(250, 204, 21, 0.18);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+            --radius-pill: 50px;
+            --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --transition-smooth: 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            --transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* ==============================
+             BASE & BACKGROUND
+             ============================== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(ellipse at 50% 30%, #0d0b3a 0%, #020014 70%, #01000c 100%);
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: -3;
+            background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+        }
+
+        #neural-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -4;
+            pointer-events: none;
+        }
+
+        /* ==============================
+             HUD TOP BAR
+             ============================== */
+        .hud {
+            position: fixed;
+            top: 1.4rem;
+            left: 2rem;
+            right: 2rem;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        .hud-brand {
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.8px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.45rem 1.1rem;
+            border-radius: var(--radius-pill);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .hud-metrics {
+            display: flex;
+            gap: 0.7rem;
+        }
+        .hud-item {
+            background: rgba(15, 20, 40, 0.7);
+            padding: 0.4rem 0.95rem;
+            border-radius: 30px;
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            font-weight: 600;
+            color: var(--text-accent);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            white-space: nowrap;
+            transition: all var(--transition-smooth);
+        }
+        .hud-item i {
+            color: var(--gold);
+            margin-right: 6px;
+        }
+        .hud-item .val {
+            color: var(--cyan);
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+
+        /* ==============================
+             REVEAL.JS OVERRIDES
+             ============================== */
+        .reveal {
+            font-family: var(--font-body);
+        }
+        .reveal .slides {
+            text-align: left;
+        }
+        .reveal .slides section {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 2.2rem;
+            box-sizing: border-box;
+        }
+        .title-slide {
+            text-align: center !important;
+        }
+        .title-slide h1,
+        .title-slide p,
+        .title-slide div {
+            text-align: center !important;
+        }
+
+        /* Typography */
+        .reveal h1 {
+            font-size: clamp(2.4rem, 5vw, 3.8rem);
+            background: linear-gradient(135deg, #ffffff 25%, #facc15 65%, #2dd4bf 90%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 750;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+        .reveal h2 {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            border-left: 5px solid var(--gold);
+            padding-left: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            font-weight: 650;
+            letter-spacing: -0.4px;
+            line-height: 1.3;
+            transition: border-color 0.3s ease;
+        }
+        .reveal h3 {
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            color: var(--gold);
+            font-weight: 550;
+            margin-bottom: 0.6rem;
+            letter-spacing: -0.2px;
+        }
+        .reveal p,
+        .reveal blockquote,
+        .reveal td {
+            color: #ffffff;
+            font-size: clamp(1rem, 1.6vw, 1.3rem);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+        .reveal li {
+            font-size: clamp(1rem, 1.6vw, 1.3rem);
+            margin-bottom: 0.9rem;
+            text-align: left;
+            line-height: 1.5;
+            color: #f3f4f6;
+        }
+        .reveal ul {
+            margin-left: 1.8rem;
+        }
+        .reveal strong {
+            color: #fff176;
+            font-weight: 700;
+        }
+        .reveal em {
+            color: var(--accent-tertiary);
+            font-style: normal;
+            font-weight: 500;
+        }
+        .reveal a {
+            color: #ffe082;
+            border-bottom: 1px dotted #ffd54f;
+            transition: color 0.2s, border-color 0.2s;
+            text-decoration: none;
+        }
+        .reveal a:hover {
+            color: #ffffff;
+            border-bottom-style: solid;
+            border-bottom-color: #ffffff;
+        }
+
+        /* ==============================
+             LAYOUT UTILITIES
+             ============================== */
+        .grid-split {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 2.5rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        @media (max-width: 900px) {
+            .grid-split {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+        .text-center {
+            text-align: center !important;
+        }
+
+        /* ==============================
+             GLASS CARDS
+             ============================== */
+        .glass-card {
+            background: var(--surface-glass);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 1.8rem 2rem;
+            transition: all var(--transition-smooth);
+            color: #ffffff;
+            box-shadow: var(--shadow-card);
+            will-change: transform;
+            transform-style: preserve-3d;
+            perspective: 800px;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transition: left 0.5s ease;
+        }
+        .glass-card:hover::before {
+            left: 100%;
+        }
+        .glass-card:hover {
+            border-color: var(--border-glass-hover);
+            box-shadow: var(--shadow-glow), var(--shadow-card);
+            background: var(--surface-glass-hover);
+            transform: translateY(-2px);
+        }
+
+        /* ==============================
+             SECTION BADGE
+             ============================== */
+        .section-badge {
+            display: inline-block;
+            background: rgba(250, 204, 21, 0.15);
+            padding: 0.35rem 1.3rem;
+            border-radius: var(--radius-pill);
+            font-size: 0.78rem;
+            letter-spacing: 2px;
+            color: #ffe082;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            font-weight: 700;
+            border: 1px solid rgba(250, 204, 21, 0.28);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+            transition: all var(--transition-smooth);
+        }
+        .section-badge:hover {
+            background: rgba(250, 204, 21, 0.25);
+            border-color: rgba(250, 204, 21, 0.5);
+            transform: scale(1.05);
+        }
+        .section-badge i {
+            margin-right: 6px;
+        }
+
+       /* ==============================
+             FIGURE MODULES
+             ============================== */
+        .fig-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .fig-box {
+            width: 100%;
+            height: clamp(280px, 40vw, 380px);
+            background: #ffffff;
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.55), 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            transition: all var(--transition-bounce);
+        }
+        .fig-box:hover {
+            border-color: rgba(250, 204, 21, 0.6);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.55), 0 10px 34px rgba(250, 204, 21, 0.2);
+            transform: scale(1.02);
+        }
+        .fig-box img {
+            max-height: 88%;
+            max-width: 88%;
+            object-fit: contain;
+            border-radius: 6px;
+            transition: transform 0.4s ease;
+        }
+        .fig-box:hover img {
+            transform: scale(1.05);
+        }
+        .fig-box .placeholder {
+            color: #64748b;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 1rem;
+            opacity: 0.7;
+        }
+        .caption {
+            font-size: 0.82rem;
+            color: #ffd54f;
+            text-align: center;
+            margin-top: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            background: rgba(0, 0, 0, 0.45);
+            padding: 0.3rem 1rem;
+            border-radius: var(--radius-sm);
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            transition: all var(--transition-smooth);
+        }
+        .fig-box:hover + .caption,
+        .caption:hover {
+            background: rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* ==============================
+             TABLES
+             ============================== */
+        table {
+            background: rgba(10, 12, 28, 0);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 18px;
+            width: 100%;
+            margin: 1.3rem 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border: 1px solid rgba(245, 216, 99, 0.4);
+        }
+        th,
+        td {
+            padding: 1rem 1.2rem;
+            border-bottom: 1px solid rgba(250, 204, 21, 0.13);
+            color: #ffecb3;
+            font-size: clamp(0.9rem, 1.4vw, 0.9rem);
+            transition: background 0.3s ease;
+        }
+        th {
+            background: rgba(250, 204, 21, 0.13);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+            border-bottom: 2px solid rgba(250, 204, 21, 0.38);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: var(--font-mono);
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        td {
+            background: rgba(5, 7, 18, 0);
+            text-align: left !important;
+        }
+        tr:hover td {
+            background: rgba(15, 20, 45, 0);
+        }
+        td i {
+            margin-right: 4px;
+        }
+
+        /* ==============================
+   EQUATION BOXES - FIXED
+   ============================== */
+.eq-box {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1.2rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-mono);
+    border-left: 4px solid var(--gold);
+    color: #fff3cf;
+    margin: 1.1rem 0;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.45);
+    font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all var(--transition-smooth);
+    overflow-x: auto; /* Add horizontal scroll if needed */
+    overflow-y: hidden;
+    white-space: nowrap; /* Keep equation on one line */
+    max-width: 100%; /* Ensure it doesn't exceed parent */
+    word-wrap: break-word;
+}
+
+/* Allow the MathJax inside to be slightly smaller on smaller screens */
+.eq-box mjx-container {
+    font-size: 0.95em !important;
+}
+
+/* For very long equations, allow them to scale down */
+@media (max-width: 900px) {
+    .eq-box {
+        font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+        padding: 1rem;
+    }
+    
+    .eq-box mjx-container {
+        font-size: 0.85em !important;
+    }
+}
+
+        /* ==============================
+             ACKNOWLEDGMENT BOX
+             ============================== */
+        .ack-box {
+            background: rgba(14, 116, 144, 0.13);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            border-radius: var(--radius-md);
+            padding: 1.1rem 1.4rem;
+            margin-top: 1.4rem;
+            transition: all var(--transition-smooth);
+        }
+        .ack-box:hover {
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(14, 116, 144, 0.2);
+        }
+        .ack-box p {
+            font-size: clamp(0.95rem, 1.4vw, 1.15rem) !important;
+            line-height: 1.5;
+            margin: 0;
+            color: #e2e8f0;
+        }
+
+        /* ==============================
+             HIGHLIGHTS & SPECIAL TEXT
+             ============================== */
+        .highlight-gold {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .highlight-cyan {
+            color: var(--cyan);
+            font-weight: 600;
+        }
+        blockquote {
+            font-size: clamp(1rem, 1.5vw, 1.2rem);
+            border-left: 4px solid var(--cyan);
+            padding-left: 1rem;
+            margin-top: 1rem;
+            color: #cbd5e1;
+            font-style: italic;
+            background: rgba(45, 212, 191, 0.05);
+            padding: 0.8rem 1.2rem;
+            border-radius: 0 8px 8px 0;
+            transition: all var(--transition-smooth);
+        }
+        blockquote:hover {
+            border-left-color: var(--gold);
+            background: rgba(45, 212, 191, 0.1);
+        }
+
+        /* ==============================
+             PROGRESS BAR CUSTOMIZATION
+             ============================== */
+        .reveal .progress {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .reveal .progress span {
+            background: linear-gradient(90deg, var(--gold), var(--cyan));
+            box-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+        }
+
+        /* ==============================
+             SCROLLBAR
+             ============================== */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(250, 204, 21, 0.35);
+            border-radius: 10px;
+        }
+
+        /* ==============================
+             PULSE ANIMATION FOR SPECIAL ELEMENTS
+             ============================== */
+        @keyframes pulse-gold {
+            0%, 100% { box-shadow: 0 0 5px rgba(250, 204, 21, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.5); }
+        }
+        .pulse-animation {
+            animation: pulse-gold 2s ease-in-out infinite;
+        }
+
+        /* ==============================
+             FADE IN UP ANIMATION
+             ============================== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="neural-bg"></canvas>
+
+    <div class="hud" id="hud">
+        <div class="hud-brand">PH‑700 // TECHNIQUES IN EXPERIMENTAL & COMPUTATIONAL PHYSICS</div>
+        <div class="hud-metrics">
+            <div class="hud-item">
+                <i class="fas fa-network-wired"></i> STATE: <span class="val" id="hud-section">—</span>
+            </div>
+            <div class="hud-item">
+                <i class="fas fa-bolt"></i> EPR: <span class="val" id="hud-epr">—</span> nats/s
+            </div>
+            <div class="hud-item">
+                <i class="fas fa-clock"></i> SLIDE: <span class="val" id="hud-slide">1</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- TITLE SLIDE -->
+            <section class="title-slide" data-state="title-mode">
+                <div style="margin-bottom: 2.5rem;">
+                    <span class="section-badge pulse-animation" style="font-size:0.9rem; padding:0.5rem 1.5rem;">
+                        PH‑700 Techniques in Experimental and Computational Physics
+                    </span>
+                </div>
+                <h1>Nonequilibrium Physics<br>of Brain Dynamics</h1>
+
+                <div style="margin-top: 4.5rem; display: flex; flex-direction: column; gap: 1.5rem; justify-content: center; align-items: center;">
+    <div class="fade-in-up">
+        <p style="font-size:0.8rem; color:#ffd54f; margin-bottom:0.3rem; letter-spacing:1.5px; font-weight:700; text-transform:uppercase;">Presenter</p>
+        <p style="font-size:1.5rem; font-weight:600;">
+            Uzma Yousaf 
+            <span style="font-size:1.5rem; font-weight:600; color:#ffffff; font-family:var(--font-mono);">| s2026139003</span>
+        </p>
+    </div>
+    <div class="fade-in-up" style="animation-delay: 0.2s;">
+        <p style="font-size:0.8rem; color:#ffd54f; margin-bottom:0.3rem; letter-spacing:1.5px; font-weight:700; text-transform:uppercase;">Instructor</p>
+        <p style="font-size:1.5rem; font-weight:600;">Prof. Dr. Zaheer Hussain Shah</p>
+    </div>
+</div>
+            </section>
+
+            <!-- FOUNDATIONAL PRINCIPLES -->
+            <section data-state="title-mode">
+                <div class="section-badge"><i class="fas fa-atom"></i> Foundational Principles</div>
+                <h2>The Brain as an Open Thermodynamic System</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-fire-alt"></i> Breaking Boltzmann's Paradigm</h3>
+                        <p>Living neural networks exist permanently far from thermal equilibrium. Classical statistical physics rests on <em>detailed balance</em> where forward and backward states match perfectly.</p>
+                        <ul>
+                            <li><strong>Energy Fluxes:</strong> The human brain consumes ~20% of metabolic oxygen to preserve ion concentrations against steep electrical barriers.</li>
+                            <li><strong>Nonequilibrium Steady State (NESS):</strong> Driven by continuous metabolic fuel, sustaining a structural macroscopic <strong>Arrow of Time</strong>.</li>
+                        </ul>
+                    </div>
+                    <div class="glass-card">
+                        <h3><i class="fas fa-infinity"></i> Core Theoretical Objective</h3>
+                        <p>Our presentation maps out how modern physicists detect, isolate, and numerically solve for this nonequilibrium signature across macroscopic and microscopic fields.</p>
+                        <div class="eq-box">
+                            $$\Delta S_{\text{universe}} = \Delta S_{\text{system}} + \Delta S_{\text{surroundings}} > 0$$
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART I - EXPERIMENTAL -->
+            <section data-state="exp-mode">
+                <div class="section-badge"><i class="fas fa-vial"></i> Part I – Experimental Methodologies</div>
+                <h2>Measuring Neural Nonequilibrium</h2>
+                <div class="glass-card" style="margin-top: 2rem;">
+                    <h3 style="color: #ffffff; margin-bottom: 1rem;">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--gold); margin-right: 10px;"></i>
+                        The Fundamental Macroscopic Challenge
+                    </h3>
+                    <p>Neural assemblies execute non-linear interactions hidden at macro scales. Empirical capture depends on proxies (<strong>fMRI BOLD</strong>, <strong>MEG/EEG</strong> source fields, <strong>multi-unit electrode spiking</strong>) inherently masked by structured environmental noise and instrumentation limits.</p>
+                    <p style="margin-top: 1rem;">The absolute objective: isolate, compute, and authenticate an undeniable macroscopic <strong>arrow-of-time (entropy production) signature</strong> directly from observed multi-variant timeseries.</p>
+                </div>
+            </section>
+
+            <section data-state="exp-mode">
+                <h2>Experimental Pipeline Structure</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-layer-group"></i> Empirical Processing Chain</h3>
+                        <ul>
+                            <li><strong>Cortical Parcellation:</strong> Segmenting continuous macroarchitecture into structural nodes using standardized atlas coordinate configurations (e.g., Yeo-7, Schaefer-100).</li>
+                            <li><strong>Structural Connectome (SC):</strong> Resolving physical axonal tracts via Diffusion Tensor Imaging (DTI)—inherently static and undirected.</li>
+                            <li><strong>Functional Mapping:</strong> Acquiring high-resolution Multivariate Time Series (MVTS) across active regions.</li>
+                            <li><strong>Generative Optimization:</strong> Tuning parameters so synthetic ensembles reflect empirical functional connectivity.</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure3.png" alt="Whole-brain modelling pipeline" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-image"></i> Fig. 3 – Whole-brain generative model optimization framework</span>
+                        </div>
+                        <span class="caption">Fig. 3 – Whole-brain generative model optimization framework</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="exp-mode">
+                <h2>Empirical Signal Modalities</h2>
+                <div class="glass-card">
+                    <p>Isolating the thermodynamic arrow of time requires choosing a specialized window into neural biology, trading off temporal resolution for spatial coverage.</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Modality</th>
+                                <th>Physical Source Profile</th>
+                                <th>Temporal Scale</th>
+                                <th>Spatial Coverage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>fMRI BOLD</strong></td>
+                                <td>Hemodynamic oxygen delivery levels</td>
+                                <td>Slow (~0.5–2.0 Hz)</td>
+                                <td>Whole brain (~1–2 mm voxels)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>MEG / EEG</strong></td>
+                                <td>Post-synaptic ionic current sum fields</td>
+                                <td>Ultra-fast (~1 ms)</td>
+                                <td>Cortical surface macro-sensors</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Microelectrode</strong></td>
+                                <td>Extracellular action potential voltages</td>
+                                <td>Microsecond (~30 kHz)</td>
+                                <td>Local microscopic groups (~100 cells)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section data-state="exp-mode">
+                <h2>Surrogate Verification Schemes</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-shield-alt"></i> Neutralizing Sampling Bias</h3>
+                        <ul>
+                            <li><strong>The Bias Phenomenon:</strong> Finite structural records generate artificial, non-zero irreversibility metrics even within perfectly symmetric stationary signals.</li>
+                            <li><strong>Null Model Control:</strong> Constructing synthetic surrogates through localized phase-randomization or index shuffling.</li>
+                            <li><strong>Empirical Separation:</strong> Genuine neural paths yield entropy production rates scaling significantly beyond shuffled thresholds.</li>
+                            <li><strong>Proof:</strong> Verifies the macro-scale arrow of time as a core property of life (Lynn et al. 2021 <em>PNAS</em>).</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure10.png" alt="Surrogate test bar chart" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-chart-bar"></i> Fig. 10 – Irreversibility bounds vs. randomized null controls</span>
+                        </div>
+                        <span class="caption">Fig. 10 – Irreversibility bounds versus randomized null controls</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="exp-mode">
+                <h2>Experimental Raster Dynamics</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-microchip"></i> Microscopic Assembly Capture</h3>
+                        <ul>
+                            <li>High-density microelectrode arrays acquire real-time cellular spiking matrices mapped directly to binary structures:
+                                <div class="eq-box" style="margin:0.5rem 0;">$$x_i(t) \in \{0, 1\}$$</div>
+                            </li>
+                            <li>Acts as the empirical boundary constraint required to compute solutions to the <strong>inverse Ising problem</strong>.</li>
+                            <li><strong>Perturbation Findings:</strong> Direct exposure to complex sensory inputs drives multi-unit spike sequences into highly irreversible trajectories (Lynn et al. 2022 <em>PRL</em>).</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure11.png" alt="Raster plot" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-wave-square"></i> Fig. 11 – High-density multielectrode spike train raster</span>
+                        </div>
+                        <span class="caption">Fig. 11 – High-density multielectrode spike train raster</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART II - COMPUTATIONAL -->
+            <section data-state="comp-mode">
+                <div class="section-badge"><i class="fas fa-microchip"></i> Part II – Computational Architectures</div>
+                <h2>Modelling &amp; Nonequilibrium Inference</h2>
+                <div class="glass-card" style="margin-top: 2rem;">
+                    <h3 style="color: #ffffff; margin-bottom: 1rem;">
+                        <i class="fas fa-calculator" style="color: var(--gold); margin-right: 10px;"></i>
+                        Bridging Data to Statistical Mechanics
+                    </h3>
+                    <p>Converting passive biophysical observations into exact mathematical formulations requires inverse statistical models. By optimizing continuous stochastic equations and discrete network configurations, we can compute hidden properties and explicitly measure global <strong>Entropy Production Rates (EPR)</strong>.</p>
+                </div>
+            </section>
+
+            <section data-state="comp-mode">
+                <h2>Helmholtz‑Hodge Vector Field Anatomy</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-vector-square"></i> Decomposing Continuous Drift</h3>
+                        <p>Any continuous stationary phase-space velocity field $\mathbf{F}(\mathbf{x})$ splits cleanly into symmetric gradients and rotational elements:</p>
+                        <div class="eq-box">
+                            $$\begin{aligned}
+                            \mathbf{F}_{\text{rev}} &= \mathbf{D}\nabla\log P_{\text{ss}}(\mathbf{x}) \\
+                            \mathbf{F}_{\text{irr}} &= \mathbf{J}_{\text{ss}}(\mathbf{x}) / P_{\text{ss}}(\mathbf{x})
+                            \end{aligned}$$
+                        </div>
+                        <ul>
+                            <li>The curl component ($\mathbf{F}_{\text{irr}}$) directly isolates the circulation loops breaking detailed balance.</li>
+                            <li><strong>System EPR Equation:</strong>
+                                <div style="margin-top:0.4rem; font-weight:600; color:var(--gold);">
+                                    $$\dot{S}_i = \int \mathbf{F}_{\text{irr}}^{\top} \mathbf{D}^{-1} \mathbf{F}_{\text{irr}} P_{\text{ss}} \, d\mathbf{x} \ge 0$$
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure4.png" alt="Helmholtz-Hodge Decomposition" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-vector-square"></i> Fig. 4 – Velocity field vector decomposition</span>
+                        </div>
+                        <span class="caption">Fig. 4 – Velocity field decomposition (Reversible vs Irreversible)</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="comp-mode">
+                <h2>Asymmetric Effective Connectivity</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-project-diagram"></i> Breaking Structural Symmetry</h3>
+                        <ul>
+                            <li><strong>The Parameter Gap:</strong> Anatomical wiring links (DTI) lack causal direction parameters ($A_{ij} = A_{ji}$).</li>
+                            <li><strong>The Solution:</strong> Fit directional biophysical dynamics (Hopf bifurcations, Kuramoto oscillators) bounded by empirical time-lagged cross-covariances.</li>
+                            <li>Yields a highly asymmetric directed coupling matrix:
+                                <div class="eq-box" style="margin:0.5rem 0;">$$J_{ij} \neq J_{ji}$$</div>
+                            </li>
+                            <li><strong>Trophic Topology:</strong> Reveals a processing sequence climbing from primitive sensory zones to integrative networks.</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure5.png" alt="Directed network" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-project-diagram"></i> Fig. 5 – Asymmetric networks</span>
+                        </div>
+                        <span class="caption">Fig. 5 – Asymmetric networks tracking directional processing hierarchies</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="comp-mode">
+                <h2>Discrete Network Spaces: GHMM Framework</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-cube"></i> Schnakenberg Entropy Calculations</h3>
+                        <p>Gaussian Hidden Markov Models map continuous fMRI pathways into distinct hidden macro states. Transition fluxes yield the exact <strong>Schnakenberg EPR formula</strong>:</p>
+                        <div class="eq-box">
+                            $$\Pi = \frac{1}{2} \sum_{a,b} (q_{ab}P_b - q_{ba}P_a) \log\left(\frac{q_{ab}P_b}{q_{ba}P_a}\right)$$
+                        </div>
+                        <ul>
+                            <li>Quantifies the precise directional breaking of detail balance across resting circuits.</li>
+                            <li>Active external task engagement shifts transition pathways, scaling overall EPR upward.</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure7.png" alt="GHMM states" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-cubes"></i> Fig. 7 – Discrete Hidden Markov states</span>
+                        </div>
+                        <span class="caption">Fig. 7 – Discrete Hidden Markov states mapped from cortical timeseries</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="comp-mode">
+                <h2>Asymmetric Kinetic Ising Models</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-brain"></i> Resolving Microscopic EPR Components</h3>
+                        <ul>
+                            <li>Maximum likelihood approaches reconstruct complete thermodynamic spin couplings ($J_{ij}$) and fields ($H_i$) from binary spike data.</li>
+                            <li>Directional imbalances break detailed balance, stabilizing a Nonequilibrium Steady State (NESS).</li>
+                            <li><strong>EPR Scale Breakdown:</strong> Pairwise dependencies handle ~80% of baseline irreversibility. High-order triplets activate selectively when parsing structured visual environments.</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure12.png" alt="Ising model inference" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-brain"></i> Fig. 12 – Ising network inference</span>
+                        </div>
+                        <span class="caption">Fig. 12 – Ising network inference and multi-order EPR isolation</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="comp-mode">
+                <h2>Visibility Graph Network Mapping</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-chart-line"></i> Translating Series into Graphs</h3>
+                        <ul>
+                            <li>Geometric visibility algorithms convert raw continuous tracking data into complex directed networks.</li>
+                            <li>Under perfectly reversible conditions, chronological in-degree and out-degree geometric distributions match exactly.</li>
+                            <li><strong>Kullback-Leibler Divergence ($D_{\text{KL}}$):</strong> Quantifies asymmetric degree distributions to yield a robust irreversibility metric.</li>
+                            <li><strong>EEG Profiles:</strong> Deep slow-wave sleep maps as nearly reversible; alert waking profiles and epileptic shocks trigger high irreversibility metrics.</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure8.png" alt="Visibility graph mechanics" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-chart-line"></i> Fig. 8 – Time-series geometric mapping</span>
+                        </div>
+                        <span class="caption">Fig. 8 – Time-series geometric mapping via visibility algorithms</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="comp-mode">
+                <h2>Higher‑Order Simplicial Systems</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-shapes"></i> Beyond Pairwise Interconnectivity</h3>
+                        <ul>
+                            <li>Standard graph metrics fail to capture information routing that relies on multi-node cooperative synergy.</li>
+                            <li>The <strong>DiMViGI</strong> architecture forms multi-layered visibility networks over complex multi-region geometric hyperedges.</li>
+                            <li>Extracts directed divergence values across multi-node topologies.</li>
+                            <li><strong>MEG Discoveries:</strong> Specific cortical triplets produce massive irreversibility responses that cannot be predicted by pairwise connections.</li>
+                        </ul>
+                    </div>
+                    <div class="fig-container">
+                        <div class="fig-box">
+                            <img src="figures/figure9.png" alt="Simplicial complexes" loading="lazy">
+                            <span class="placeholder" style="display:none;"><i class="fas fa-shapes"></i> Fig. 9 – Multi-node topological simplicial complex</span>
+                        </div>
+                        <span class="caption">Fig. 9 – Multi-node topological simplicial complex configurations</span>
+                    </div>
+                </div>
+            </section>
+
+            <section data-state="comp-mode">
+                <h2>Phase Transitions and Criticality</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-wave-square"></i> The Edge of Chaos</h3>
+                        <p>Whole-brain systems realize peak thermodynamic operational capacity near critical bifurcation boundaries.</p>
+                        <ul>
+                            <li><strong>Hopf Bifurcation Tuning:</strong> Adjusting global control parameters ($G$) to balance stable point attractors and sustained oscillations.</li>
+                            <li><strong>Information Routing:</strong> Operating near the critical point maximizes long-range correlations and optimizes the dynamic workspace.</li>
+                            <li><strong>EPR Correlate:</strong> Maximizing entropy production corresponds directly to higher cognitive flexibility and active environmental engagement.</li>
+                        </ul>
+                    </div>
+                    <div class="glass-card">
+                        <h3><i class="fas fa-sliders-h"></i> Parameter Control Equation</h3>
+                        <div class="eq-box">
+                            $$\frac{dz_j}{dt} = \left[\rho_j + i\omega_j - |z_j|^2\right]z_j + G \sum_{k} J_{jk} z_k + \eta_j(t)$$
+                        </div>
+                        <p style="margin-top:0.5rem; font-size: 1.1rem;">
+                            Adjusting the global scaling factor <em>G</em> balances empirical functional correlations against model predictions.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CLINICAL APPLICATIONS -->
+            <section data-state="title-mode">
+                <div class="section-badge"><i class="fas fa-stethoscope"></i> Neurological Applications</div>
+                <h2>Clinical &amp; Cognitive EPR Signatures</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Brain State Profiling</th>
+                            <th>EPR Shift Vector</th>
+                            <th>Biophysical Source Mechanism</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Active Cognitive Task Execution</strong></td>
+                            <td style="color:#ffffff; font-weight:700;"><i class="fas fa-arrow-up" style="color:#4ade80;"></i> Marked Elevation</td>
+                            <td>Extrinsic task demands drive directional feedforward-feedback loops</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Deep Slow-Wave Sleep (N3)</strong></td>
+                            <td style="color:#ffffff; font-weight:700;"><i class="fas fa-arrow-down" style="color:#f87171;"></i> Severe Drop</td>
+                            <td>Symmetric, synchronized delta slow waves restore detailed balance</td>
+                        </tr>
+                        <tr>
+                            <td><strong>General Anesthesia / Coma</strong></td>
+                            <td style="color:#ffffff; font-weight:700;"><i class="fas fa-arrow-down" style="color:#f87171;"></i> Minimum Baseline</td>
+                            <td>Loss of feedback connectivity maps into a near-reversible system</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Schizophrenia Spectrum</strong></td>
+                            <td style="color:#ffffff; font-weight:700;"><i class="fas fa-exchange-alt" style="color:#fbbf24;"></i> Altered Topography</td>
+                            <td>Deficiencies in specific Default Mode Network (DMN) arrow-of-time links</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- SYNTHESIS -->
+            <section data-state="title-mode">
+                <h2>Synthesis: Methodological Integration Matrix</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Analysis Vector</th>
+                            <th>Experimental Architecture</th>
+                            <th>Computational Engine</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Data Handling</strong></td>
+                            <td>Acquires raw physiological signals (fMRI, MEG, Multi-unit Spikes)</td>
+                            <td>Executes filtering, denoising, and Multivariate Time Series extraction</td>
+                        </tr>
+                        <tr>
+                            <td><strong>System Boundary</strong></td>
+                            <td>Applies anatomical coordinate parcellations to establish nodes</td>
+                            <td>Constructs functional connectivity topologies and adjacency arrays</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Statistical Control</strong></td>
+                            <td>Defines physical paradigm bounds and acquisition constraints</td>
+                            <td>Generates randomized phase/shuffled null surrogates for bias validation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Generative Modeling</strong></td>
+                            <td>Provides static anatomical roadmaps via DTI structural profiling</td>
+                            <td>Optimizes dynamic systems (Langevin, Hopf, Ising) via inverse inference</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Metric Computation</strong></td>
+                            <td>Records raw voltage fluctuations and blood oxygenation signals</td>
+                            <td>Extracts thermodynamic variables (EPR, Trophic levels, $D_{\text{KL}}$ divergence)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- CONCLUSIONS -->
+            <section data-state="title-mode">
+                <div class="section-badge"><i class="fas fa-check-double"></i> Epilogue</div>
+                <h2>Core Theoretical Conclusions</h2>
+                <div class="grid-split">
+                    <div class="glass-card">
+                        <h3><i class="fas fa-check-circle"></i> Methodological Paradigm</h3>
+                        <ul>
+                            <li><strong>Irreversibility Quantified:</strong> The human macroscopic arrow of time is directly calculable from empirical time series data.</li>
+                            <li><strong>Scale Bridging:</strong> Multi-scale tracking proves that high-order network configurations govern computational complexity.</li>
+                            <li><strong>Functional Linkage:</strong> Metabolic expenditure balances detailed balance to optimize functional information processing.</li>
+                        </ul>
+                    </div>
+                    <div class="glass-card" style="border-color: rgba(45, 212, 191, 0.4);">
+                        <h3><i class="fas fa-graduation-cap"></i> <i class="fas fa-forward"></i> Future Computational Horizons</h3>
+                        <p>Developing non-stationary inverse techniques will let us track shifting entropy production rates in real-time as cognitive processing unfolds.</p>
+                        <blockquote>
+                            "Nonequilibrium thermodynamic metrics provide an unmasked window directly into both the conscious mind and complex pathological states."
+                        </blockquote>
+                    </div>
+                </div>
+            </section>
+<section data-state="title-mode" style="height: auto; min-height: 100%;">
+
+  <h2 style="font-size: 1.3rem; margin-bottom: 0.6rem;">PH‑700 Techniques Applied to Nonequilibrium Brain Dynamics</h2>
+  <!-- glass-card with padding-top removed -->
+  <div class="glass-card" style="width: 100%; max-width: 100%; padding: 0 0.6rem 0.6rem 0.6rem; overflow-y: auto; max-height: 65vh; box-sizing: border-box;">
+    <table style="width: 100%; min-width: 650px; font-size: 0.4rem; border-collapse: collapse; line-height: 1.2; margin-top: 0;">
+      <thead style="position: sticky; top: 0; z-index: 10;">
+        <tr style="border-bottom: 2px solid var(--gold); background: rgba(10, 12, 28, 0.95);">
+          <th style="text-align: left; padding: 4px;">PH‑700 Physics Topic</th>
+          <th style="text-align: left; padding: 4px;">Experimental Physics Method</th>
+          <th style="text-align: left; padding: 4px;">Computational Physics Method</th>
+          <th style="text-align: left; padding: 4px;">Application in Brain Dynamics Review (2026)</th>
+         </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding: 4px;"><strong>Thermodynamics & entropy</strong><br>(2nd law, detailed balance)</td>
+            <td style="padding: 4px;">Calorimetry, energy flux proxies (fMRI BOLD, MEG)</td>
+            <td style="padding: 4px;">Entropy production rate (EPR) from time series</td>
+            <td style="padding: 4px;">Quantifying broken detailed balance & arrow of time in human brain (NESS); EPR as consciousness correlate (§2, §3.3)</td>
+         </tr>
+        <tr><td style="padding: 4px;"><strong>Statistical mechanics</strong><br>(Gaussian processes, fluctuation‑dissipation)</td>
+            <td style="padding: 4px;">Repeated measurements, error estimation (σ, bias)</td>
+            <td style="padding: 4px;">Maximum‑likelihood, covariance matrices, surrogate data</td>
+            <td style="padding: 4px;">Linear Langevin/OUP models for resting‑state fMRI; fluctuation‑dissipation violation as nonequilibrium signature (§3.1.1)</td>
+         </tr>
+        <tr><td style="padding: 4px;"><strong>Signal processing & Fourier analysis</strong><br>(spectral decomposition, Nyquist)</td>
+            <td style="padding: 4px;">Anti‑aliasing filters, digitisation (DAQ)</td>
+            <td style="padding: 4px;">FFT, eigenmode decomposition, power spectra</td>
+            <td style="padding: 4px;">Decomposing entropy production into oscillatory modes (ECoG); band‑pass filtering of MEG/EEG (§3.4.3)</td>
+         </tr>
+        <tr><td style="padding: 4px;"><strong>Nonlinear dynamics & bifurcation theory</strong><br>(Hopf, Kuramoto, criticality)</td>
+            <td style="padding: 4px;">Stimulus‑response experiments, phase locking</td>
+            <td style="padding: 4px;">Numerical integration, parameter optimisation, stability analysis</td>
+            <td style="padding: 4px;">Asymmetric Hopf whole‑brain models; self‑organised criticality (avalanches); optimal information processing at critical point (§3.1.3, §4.3)</td>
+         </tr>
+        <tr><td style="padding: 4px;"><strong>Curve fitting & regression</strong><br>(least‑squares, χ², residuals)</td>
+            <td style="padding: 4px;">Calibration curves, reference standards</td>
+            <td style="padding: 4px;">Linear/nonlinear least‑squares, AR1 models, χ² minimisation</td>
+            <td style="padding: 4px;">Fitting effective connectivity (GEC); autoregressive inference of directed networks (§3.1.1, §3.1.3)</td>
+         </tr>
+        <tr><td style="padding: 4px;"><strong>Monte Carlo & noise reduction</strong><br>(ensemble averaging, variance)</td>
+            <td style="padding: 4px;">Signal averaging, shielding, repeated runs</td>
+            <td style="padding: 4px;">Bootstrap resampling, Monte Carlo integration, surrogate testing</td>
+            <td style="padding: 4px;">Significance testing for irreversibility; estimating EPR in kinetic Ising models; finite‑data bias correction (§3.5, §4.1)</td>
+         </tr>
+        <tr><td style="padding: 4px;"><strong>Condensed matter characterisation</strong><br>(XRD, SEM, UV‑Vis, Raman)</td>
+            <td style="padding: 4px;">Diffraction, microscopy, optical absorption</td>
+            <td style="padding: 4px;">Tauc plot, Scherrer equation, peak fitting</td>
+            <td style="padding: 4px;"><strong>Physical analogy:</strong> XRD (crystal lattice) ↔ DTI structural connectome; UV‑Vis Tauc (band gap) ↔ entropy production intercept (§3.3)</td>
+         </tr>
+        <tr><td style="padding: 4px;"><strong>Computational physics</strong><br>(numerical ODEs, ML, FFT)</td>
+            <td style="padding: 4px;">Hardware interfacing, real‑time DAQ</td>
+            <td style="padding: 4px;">Numerical integration (Langevin), optimisation, neural networks</td>
+            <td style="padding: 4px;">Kinetic Ising inference (MLE), TENET arrow‑of‑time classifier, FFT‑based EPR decomposition (§3.3.2, §4.1)</td>
+         </tr>
+      </tbody>
+    </table>
+    <div class="caption" style="margin-top: 0.5rem; text-align: center; font-size: 0.6rem;">
+      <i class="fas fa-book-open"></i> Based on PH‑700 lectures 1–7 & Nartallo‑Kaluarachchi et al., <em>Physics Reports</em> 1152 (2026) 1–43.
+    </div>
+  </div>
+</section>
+            <!-- REFERENCES -->
+            <section data-state="title-mode">
+                <div class="glass-card" style="max-width:950px; text-align:left; margin: 0 auto;">
+                    <h2><i class="fas fa-graduation-cap" style="margin-right:12px;"></i> References</h2>
+                    <p style="margin-bottom:0.6rem; font-size: 1.1rem;">
+                        Nartallo‑Kaluarachchi, R., Kringelbach, M., Deco, G., Lambiotte, R., &amp; Goriely, A. (2026).
+                        Nonequilibrium physics of brain dynamics. <em>Physics Reports</em>, <em>1152</em>, 1–43.
+                    </p>
+                    <p style="margin-bottom:0.6rem; font-size: 1.1rem;">
+                        Lynn, C. W., Cornblath, E. J., Papadopoulos, L., &amp; Bassett, D. S. (2021).
+                        Broken detailed balance and entropy production in the human brain.
+                        <em>Proceedings of the National Academy of Sciences</em>, <em>118</em>(47), e2109888118.
+                    </p>
+                    <p style="margin-bottom:0.6rem; font-size: 1.1rem;">
+                        Deco, G., Sanz‑Perl, Y., Bocaccio, H., Tagliazucchi, E., &amp; Kringelbach, M. L. (2022).
+                        The INSIDE OUT framework provides precise signatures of the balance of intrinsic and extrinsic dynamics in brain states.
+                        <em>Communications Biology</em>, <em>5</em>, Article 572.
+                    </p>
+                    <p style="margin-bottom:0.6rem; font-size: 1.1rem;">
+                        Lynn, C. W., Holmes, C. M., Bialek, W., &amp; Schwab, D. J. (2022).
+                        Decomposing the local arrow of time in interacting systems.
+                        <em>Physical Review Letters</em>, <em>129</em>(11), 118101.
+                    </p>
+                    <p style="margin-bottom:0.6rem; font-size: 1.1rem;">
+                        Deco, G., Sanz‑Perl, Y., de la Fuente, L., Sitt, J. D., Yeo, B. T. T., Tagliazucchi, E., &amp; Kringelbach, M. L. (2023).
+                        The arrow of time of brain signals in cognition: Potential intriguing role of parts of the default mode network.
+                        <em>Network Neuroscience</em>, <em>7</em>(3), 966–998.
+                    </p>
+                </div>
+            </section>
+
+            <!-- ACKNOWLEDGMENTS -->
+            <section data-state="title-mode">
+                <div class="glass-card" style="max-width:950px; text-align:left; margin: 0 auto;">
+                    <h2><i class="fas fa-graduation-cap" style="margin-right:12px;"></i> Acknowledgments</h2>
+                    <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin-bottom:1.2rem;">
+                    <div class="ack-box">
+                        <p><i class="fas fa-graduation-cap" style="color:#37bdf8; margin-right:8px;"></i><strong>Academic Recognition</strong></p>
+                        <p style="margin-top:0.4rem;">Sincere gratitude is extended to <strong>Prof. Dr. Zaheer Hussain Shah</strong> for establishing the core principles of thermodynamic equilibrium systems, network inference, and advanced analytics in the curriculum of <strong>PH‑700: Techniques in Experimental &amp; Computational Physics</strong>.</p>
+                    </div>
+                    <div style="margin-top:1.5rem;" class="text-center">
+                        <span style="font-family:var(--font-mono); font-size:1.1rem; color:var(--accent-tertiary); font-weight:600;">
+                            <i class="fas fa-circle-nodes"></i> <i class="fas fa-graduation-cap"></i> Session Concluded. Open for Scholarly Discussion.
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/zoom/zoom.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/math/math.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        (function() {
+            // ==============================
+            // REVEAL.JS INITIALIZATION
+            // ==============================
+            Reveal.initialize({
+                hash: true,
+                controls: false,
+                progress: true,
+                center: true,
+                width: 1200,
+                height: 750,
+                margin: 0.05,
+                minScale: 0.2,
+                maxScale: 1.5,
+                transition: 'convex',
+                backgroundTransition: 'zoom',
+                autoAnimateDuration: 1.0,
+                plugins: [RevealZoom, RevealMath.MathJax3],
+                mathjax3: {
+                    mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
+                    tex: {
+                        inlineMath: [['$', '$'], ['\\(', '\\)']]
+                    }
+                }
+            });
+
+            // ==============================
+            // ENHANCED NEURAL BACKGROUND ENGINE
+            // ==============================
+            const canvas = document.getElementById('neural-bg');
+            const ctx = canvas.getContext('2d', { alpha: true });
+            let width, height, stars = [], particles = [];
+            let mouse = { x: -1000, y: -1000 };
+            let animationId;
+
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                
+                // Occasionally spawn particles on mouse move
+                if (Math.random() < 0.3) {
+                    spawnParticle(e.clientX, e.clientY);
+                }
+            });
+
+            function spawnParticle(x, y) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 1.0,
+                    maxLife: 1.0,
+                    size: Math.random() * 2 + 0.5
+                });
+                
+                // Limit particles
+                if (particles.length > 50) particles.shift();
+            }
+
+            function drawStar(ctx, x, y, outerR) {
+                const innerR = outerR * 0.4;
+                const spikes = 5;
+                const step = Math.PI / spikes;
+                const rot = Math.PI / 2 * 3;
+                ctx.beginPath();
+                for (let i = 0; i < spikes; i++) {
+                    const angle = rot + i * step * 2;
+                    const x1 = x + Math.cos(angle) * outerR;
+                    const y1 = y + Math.sin(angle) * outerR;
+                    if (i === 0) ctx.moveTo(x1, y1);
+                    else ctx.lineTo(x1, y1);
+                    const angleInner = rot + i * step * 2 + step;
+                    const x2 = x + Math.cos(angleInner) * innerR;
+                    const y2 = y + Math.sin(angleInner) * innerR;
+                    ctx.lineTo(x2, y2);
+                }
+                ctx.closePath();
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = 'rgba(255,255,255,0.6)';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+            }
+
+            function initStars() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+                stars = [];
+                particles = [];
+                const starCount = Math.min(130, Math.floor(window.innerWidth / 14) + 50);
+                for (let i = 0; i < starCount; i++) {
+                    stars.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        vx: (Math.random() - 0.5) * 0.24,
+                        vy: (Math.random() - 0.5) * 0.24,
+                        baseSize: Math.random() * 2.2 + 1.0,
+                        phase: Math.random() * Math.PI * 2,
+                    });
+                }
+            }
+
+            function animateStars(timestamp) {
+                ctx.clearRect(0, 0, width, height);
+
+                // Update and draw particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    
+                    if (p.life <= 0) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(250, 204, 21, ${p.life * 0.5})`;
+                    ctx.fill();
+                }
+
+                for (const s of stars) {
+                    s.x += s.vx;
+                    s.y += s.vy;
+                    if (s.x < 0) { s.x = 0; s.vx *= -1; }
+                    if (s.x > width) { s.x = width; s.vx *= -1; }
+                    if (s.y < 0) { s.y = 0; s.vy *= -1; }
+                    if (s.y > height) { s.y = height; s.vy *= -1; }
+
+                    const dx = mouse.x - s.x;
+                    const dy = mouse.y - s.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 130 && dist > 0) {
+                        const angle = Math.atan2(dy, dx);
+                        const force = (130 - dist) / 130 * 1.2;
+                        s.x -= Math.cos(angle) * force;
+                        s.y -= Math.sin(angle) * force;
+                    }
+                }
+
+                // Draw connections with varying intensity
+                for (let i = 0; i < stars.length; i++) {
+                    for (let j = i + 1; j < stars.length; j++) {
+                        const s1 = stars[i], s2 = stars[j];
+                        const d = Math.hypot(s1.x - s2.x, s1.y - s2.y);
+                        if (d < 110) {
+                            ctx.beginPath();
+                            ctx.moveTo(s1.x, s1.y);
+                            ctx.lineTo(s2.x, s2.y);
+                            const intensity = 0.35 * (1 - d / 110);
+                            ctx.strokeStyle = `rgba(255, 245, 210, ${intensity + 0.08})`;
+                            ctx.lineWidth = 0.7;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                const time = timestamp * 0.0025;
+                for (const s of stars) {
+                    const twinkle = 0.8 + Math.sin(time + s.phase) * 0.15;
+                    const rad = s.baseSize * twinkle;
+                    drawStar(ctx, s.x, s.y, rad);
+                    if (s.baseSize > 1.8) {
+                        ctx.beginPath();
+                        ctx.arc(s.x, s.y, rad * 0.25, 0, Math.PI * 2);
+                        ctx.fillStyle = '#fffbe6';
+                        ctx.fill();
+                    }
+                }
+
+                animationId = requestAnimationFrame(animateStars);
+            }
+
+            window.addEventListener('resize', () => {
+                initStars();
+            });
+
+            initStars();
+            animationId = requestAnimationFrame(animateStars);
+
+            window.addEventListener('beforeunload', () => {
+                if (animationId) cancelAnimationFrame(animationId);
+            });
+
+            // ==============================
+            // ENHANCED MAGNETIC GLASS CARD MECHANICS
+            // ==============================
+            document.querySelectorAll('.glass-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const rotateX = ((y - centerY) / centerY) * -8;
+                    const rotateY = ((x - centerX) / centerX) * 8;
+                    const distance = Math.hypot((x - centerX) / centerX, (y - centerY) / centerY);
+                    const scale = 1 + Math.max(0, 0.03 - distance * 0.02);
+                    
+                    gsap.to(card, {
+                        duration: 0.4,
+                        rotateX: rotateX,
+                        rotateY: rotateY,
+                        scale: scale,
+                        ease: "power2.out"
+                    });
+                });
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, {
+                        duration: 0.6,
+                        rotateX: 0,
+                        rotateY: 0,
+                        scale: 1,
+                        ease: "elastic.out(1, 0.5)"
+                    });
+                });
+            });
+
+            // ==============================
+            // HUD STATE TRACKING
+            // ==============================
+            const hudEl = document.getElementById('hud');
+            const modeSpan = document.getElementById('hud-section');
+            const eprSpan = document.getElementById('hud-epr');
+            const slideSpan = document.getElementById('hud-slide');
+
+            requestAnimationFrame(() => {
+                hudEl.style.opacity = '1';
+            });
+
+            Reveal.on('slidechanged', event => {
+                const state = event.currentSlide.getAttribute('data-state');
+                const slideIndex = event.indexh + 1;
+                slideSpan.innerText = slideIndex;
+
+                if (state === 'exp-mode') {
+                    modeSpan.innerText = 'EXPERIMENTAL';
+                    modeSpan.style.color = '#a5b4fc';
+                    eprSpan.innerText = '0.68';
+                    eprSpan.style.color = '#2dd4bf';
+                } else if (state === 'comp-mode') {
+                    modeSpan.innerText = 'COMPUTATIONAL';
+                    modeSpan.style.color = '#2dd4bf';
+                    eprSpan.innerText = '1.20';
+                    eprSpan.style.color = '#facc15';
+                } else {
+                    modeSpan.innerText = '—';
+                    modeSpan.style.color = '#ffd54f';
+                    eprSpan.innerText = '—';
+                    eprSpan.style.color = '#2dd4bf';
+                }
+
+                // Animate HUD items on slide change
+                document.querySelectorAll('.hud-item').forEach((item, index) => {
+                    gsap.fromTo(item, 
+                        { scale: 1, opacity: 1 },
+                        { 
+                            scale: 1.05, 
+                            opacity: 0.8, 
+                            duration: 0.3,
+                            delay: index * 0.1,
+                            yoyo: true,
+                            repeat: 1,
+                            ease: "power2.inOut"
+                        }
+                    );
+                });
+            });
+
+            // ==============================
+            // FIGURE ERROR HANDLING WITH FALLBACK
+            // ==============================
+            document.querySelectorAll('.fig-box img').forEach(img => {
+                img.addEventListener('error', function() {
+                    this.style.display = 'none';
+                    const placeholder = this.parentElement.querySelector('.placeholder');
+                    if (placeholder) {
+                        placeholder.style.display = 'block';
+                        placeholder.style.opacity = '1';
+                    }
+                });
+                img.addEventListener('load', function() {
+                    const placeholder = this.parentElement.querySelector('.placeholder');
+                    if (placeholder) {
+                        placeholder.style.display = 'none';
+                        placeholder.style.opacity = '0';
+                    }
+                    // Add loaded class for animation
+                    this.classList.add('loaded');
+                    gsap.fromTo(this, 
+                        { opacity: 0, scale: 0.9 },
+                        { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.7)" }
+                    );
+                });
+            });
+
+            // ==============================
+            // SECTION BADGE ENTRANCE ANIMATION
+            // ==============================
+            Reveal.on('slidechanged', event => {
+                const badge = event.currentSlide.querySelector('.section-badge');
+                if (badge) {
+                    gsap.fromTo(badge, 
+                        { opacity: 0, y: -20, scale: 0.8 },
+                        { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.7)" }
+                    );
+                }
+            });
+
+            // ==============================
+            // KEYBOARD SHORTCUT: Fullscreen Toggle
+            // ==============================
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    } else {
+                        document.exitFullscreen();
+                    }
+                }
+            });
+
+            // ==============================
+            // INITIAL ENTRANCE ANIMATION
+            // ==============================
+            gsap.fromTo('.hud-brand', 
+                { opacity: 0, x: -50 },
+                { opacity: 1, x: 0, duration: 1, delay: 0.3, ease: "power3.out" }
+            );
+            gsap.fromTo('.hud-metrics', 
+                { opacity: 0, x: 50 },
+                { opacity: 1, x: 0, duration: 1, delay: 0.5, ease: "power3.out" }
+            );
+
+            console.log('🚀 Nonequilibrium Brain Dynamics Presentation Initialized Successfully');
+            console.log('📊 Features: Enhanced animations, particle effects, GSAP transitions');
+            console.log('🎨 Theme: Deep space with gold/cyan accents');
+        })();
+    </script>
+</body>
+</html>
